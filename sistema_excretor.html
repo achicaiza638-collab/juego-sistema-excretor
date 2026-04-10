@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Excretor</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f0faf5; min-height: 100vh; }
+#app { max-width: 580px; margin: 0 auto; padding: 16px; }
+.screen { display: none; }
+.screen.on { display: block; }
+h1 { font-size: 26px; color: #0a7c55; text-align: center; margin-bottom: 8px; }
+h2 { font-size: 18px; color: #333; margin-bottom: 12px; }
+.btn-verde { background: #0a7c55; color: white; border: none; padding: 14px 36px; border-radius: 50px; font-size: 16px; cursor: pointer; display: block; margin: 12px auto; width: 100%; }
+.btn-verde:hover { background: #085041; }
+.intro-box { background: #e0f7ee; border-radius: 14px; padding: 14px; margin: 14px 0; font-size: 14px; line-height: 1.9; color: #333; }
+.top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.pts-badge { background: #c0eedd; color: #085041; padding: 5px 16px; border-radius: 50px; font-size: 15px; font-weight: bold; }
+.ruta { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 14px; flex-wrap: wrap; }
+.paso { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 2px solid #ccc; background: white; }
+.paso.hecho { background: #e0f7ee; border-color: #0a7c55; }
+.paso.actual { background: #9fe1cb; border-color: #085041; transform: scale(1.15); }
+.flecha { color: #aaa; font-size: 13px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.tarjeta { border-radius: 14px; padding: 14px; text-align: center; border: 2px solid #ddd; background: white; cursor: pointer; }
+.tarjeta:hover { border-color: #0a7c55; background: #f0faf5; }
+.tarjeta.hecha { cursor: default; }
+.tarjeta .icono { font-size: 32px; margin-bottom: 6px; }
+.tarjeta .nombre { font-size: 13px; font-weight: bold; }
+.tarjeta .sub { font-size: 11px; color: #888; margin-top: 3px; }
+.detalle { border-radius: 14px; padding: 16px; margin-top: 10px; display: none; }
+.detalle .encabezado { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.detalle .icono-grande { font-size: 40px; }
+.detalle .titulo-org { font-size: 16px; font-weight: bold; }
+.detalle .desc { font-size: 14px; line-height: 1.6; margin-bottom: 10px; }
+.dato-box { background: rgba(255,255,255,0.6); border-radius: 10px; padding: 10px; font-size: 13px; margin-bottom: 12px; }
+.timer-wrap { background: #ddd; border-radius: 50px; height: 13px; overflow: hidden; margin-bottom: 12px; }
+#tbar { height: 100%; border-radius: 50px; background: #0a7c55; width: 100%; transition: width 0.8s linear, background 0.5s; }
+.q-box { background: #f5f5f5; border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.q-org { font-size: 13px; color: #777; margin-bottom: 6px; }
+.q-txt { font-size: 16px; font-weight: bold; color: #222; line-height: 1.5; }
+.opcion { display: block; width: 100%; text-align: left; padding: 12px 16px; border-radius: 12px; border: 1.5px solid #ddd; background: #f9f9f9; font-size: 15px; cursor: pointer; margin-bottom: 8px; color: #222; }
+.opcion:hover:not(:disabled) { background: #e0f7ee; border-color: #0a7c55; }
+.opcion.correcta { background: #c8f0e0 !important; border-color: #0a7c55 !important; color: #085041 !important; }
+.opcion.mal { background: #fddcdc !important; border-color: #e24b4a !important; color: #501313 !important; }
+.feed { border-radius: 12px; padding: 12px 16px; font-size: 14px; line-height: 1.5; margin-top: 8px; display: none; }
+.feed.ok { background: #e0f7ee; color: #085041; border: 1px solid #0a7c55; }
+.feed.mal { background: #fddcdc; color: #501313; border: 1px solid #e24b4a; }
+.medal { font-size: 70px; text-align: center; display: block; margin: 8px 0; }
+.estrellas { font-size: 32px; text-align: center; margin: 10px 0; letter-spacing: 4px; }
+.fin-aprendido { background: #e0f7ee; border-radius: 14px; padding: 16px; font-size: 14px; line-height: 2; margin: 14px 0; }
+.fin-puntos { background: #c0eedd; border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 16px; }
+.fin-puntos .numero { font-size: 40px; font-weight: bold; color: #0a7c55; }
+.fin-puntos .subtxt { font-size: 13px; color: #0a7c55; }
+#toast { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); background: #0a7c55; color: white; padding: 10px 26px; border-radius: 50px; font-size: 15px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 9999; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- PANTALLA 0: INICIO -->
+<div id="s0" class="screen on">
+  <div style="text-align:center; padding: 24px 10px 10px;">
+    <div style="font-size:70px; margin-bottom:10px;">🧬</div>
+    <h1>¡Aprendamos el<br>Sistema Excretor!</h1>
+    <p style="color:#555; font-size:15px; margin-top:6px;">Juego para grupos pequeños · 9 años</p>
+    <div class="intro-box">
+      <b>¿Cómo se juega?</b><br>
+      1. Elige un órgano del tablero<br>
+      2. Lee su información<br>
+      3. Responde 2 preguntas en equipo<br>
+      4. ¡Gana 10 puntos por cada respuesta correcta!<br>
+      5. Completa los 5 órganos para ganar 🏆
+    </div>
+    <button class="btn-verde" onclick="iniciarJuego()">🚀 ¡Empezar el juego!</button>
+  </div>
+</div>
+
+<!-- PANTALLA 1: TABLERO -->
+<div id="s1" class="screen">
+  <div class="top-bar">
+    <h2 id="titulo-tablero">Elige un órgano</h2>
+    <span class="pts-badge" id="pts1">0 pts</span>
+  </div>
+  <div class="ruta" id="ruta"></div>
+  <div class="grid" id="tarjetas"></div>
+  <div class="detalle" id="detalle"></div>
+</div>
+
+<!-- PANTALLA 2: PREGUNTAS -->
+<div id="s2" class="screen">
+  <div class="top-bar">
+    <span id="qlabel" style="font-size:13px;color:#777;"></span>
+    <span class="pts-badge" id="pts2">0 pts</span>
+  </div>
+  <div class="timer-wrap"><div id="tbar"></div></div>
+  <div class="q-box">
+    <p class="q-org" id="qorg"></p>
+    <p class="q-txt" id="qtxt"></p>
+  </div>
+  <div id="opciones"></div>
+  <div class="feed" id="feed"></div>
+  <button class="btn-verde" id="btnSig" style="display:none;" onclick="siguientePaso()">Continuar ➜</button>
+</div>
+
+<!-- PANTALLA 3: FINAL -->
+<div id="s3" class="screen">
+  <span class="medal" id="medal"></span>
+  <h1 style="margin-bottom:6px;">¡Felicitaciones, equipo!</h1>
+  <p id="fmsg" style="text-align:center;color:#555;font-size:15px;margin-bottom:10px;"></p>
+  <div class="estrellas" id="estrellas"></div>
+  <div class="fin-aprendido">
+    <b>Lo que aprendimos hoy:</b><br>
+    🫘 Los <b>riñones</b> filtran la sangre y producen orina<br>
+    🔗 Los <b>uréteres</b> llevan la orina a la vejiga<br>
+    💧 La <b>vejiga</b> almacena la orina<br>
+    ↕️ La <b>uretra</b> expulsa la orina del cuerpo<br>
+    🌀 El <b>intestino grueso</b> elimina desechos sólidos
+  </div>
+  <div class="fin-puntos">
+    <p style="color:#085041;font-size:15px;margin-bottom:4px;">Puntaje final del equipo</p>
+    <div class="numero" id="fnumero"></div>
+    <div class="subtxt" id="fsubt"></div>
+  </div>
+  <button class="btn-verde" onclick="reiniciar()">🔄 Jugar de nuevo</button>
+</div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+var ORGANOS = [
+  {
+    id:'r', e:'🫘', n:'Los Riñones', c:'#e0f7ee', b:'#0a7c55', t:'#085041',
+    info:'Son dos órganos con forma de frijol en la espalda. Filtran la sangre y eliminan desechos produciendo orina.',
+    dato:'¡Los riñones filtran toda la sangre del cuerpo unas 50 veces al día!',
+    qs:[
+      { q:'¿Cuál es la función principal de los riñones?',
+        o:['Almacenar la orina','Filtrar la sangre y producir orina','Transportar la orina','Eliminar desechos sólidos'], a:1,
+        ex:'¡Correcto! Los riñones filtran la sangre y producen orina.' },
+      { q:'¿Cómo se llama el líquido que producen los riñones?',
+        o:['Sangre','Saliva','Orina','Sudor'], a:2,
+        ex:'¡Así es! Los riñones producen orina al filtrar los desechos.' }
+    ]
+  },
+  {
+    id:'u', e:'🔗', n:'Los Uréteres', c:'#e6f1fb', b:'#378add', t:'#042c53',
+    info:'Son dos tubos delgados que conectan los riñones con la vejiga. Transportan la orina producida por los riñones.',
+    dato:'Los uréteres miden entre 25 y 30 cm, ¡igual que una regla!',
+    qs:[
+      { q:'¿Qué órganos conectan los uréteres?',
+        o:['La vejiga y la uretra','El corazón y los pulmones','Los riñones y la vejiga','El intestino y la vejiga'], a:2,
+        ex:'¡Muy bien! Los uréteres van desde los riñones hasta la vejiga.' },
+      { q:'¿Cuál es la función de los uréteres?',
+        o:['Filtrar la sangre','Almacenar la orina','Expulsar la orina','Transportar la orina de los riñones a la vejiga'], a:3,
+        ex:'¡Excelente! Los uréteres transportan la orina de los riñones a la vejiga.' }
+    ]
+  },
+  {
+    id:'v', e:'💧', n:'La Vejiga', c:'#faeeda', b:'#ef9f27', t:'#412402',
+    info:'Es una bolsa muscular donde se guarda la orina temporalmente. Cuando está llena, sentimos ganas de ir al baño.',
+    dato:'La vejiga puede expandirse para guardar hasta medio litro de orina.',
+    qs:[
+      { q:'¿Para qué sirve la vejiga?',
+        o:['Filtrar la sangre','Transportar la orina','Almacenar la orina temporalmente','Producir orina'], a:2,
+        ex:'¡Correcto! La vejiga almacena la orina hasta que el cuerpo la expulsa.' },
+      { q:'¿Qué sentimos cuando la vejiga está llena?',
+        o:['Hambre','Ganas de orinar','Sueño','Dolor de cabeza'], a:1,
+        ex:'¡Bien! Cuando la vejiga se llena, sentimos ganas de ir al baño.' }
+    ]
+  },
+  {
+    id:'ur', e:'↕️', n:'La Uretra', c:'#fbeaf0', b:'#d4537e', t:'#4b1528',
+    info:'Es un tubo corto que permite que la orina salga del cuerpo desde la vejiga hacia el exterior.',
+    dato:'La uretra es el último tramo antes de que la orina salga del cuerpo.',
+    qs:[
+      { q:'¿Qué hace la uretra?',
+        o:['Filtra la sangre','Almacena la orina','Expulsa la orina fuera del cuerpo','Conecta los riñones con la vejiga'], a:2,
+        ex:'¡Perfecto! La uretra expulsa la orina desde la vejiga hacia fuera del cuerpo.' },
+      { q:'¿Por dónde sale la orina del cuerpo?',
+        o:['Por los riñones','Por los uréteres','Por la vejiga','Por la uretra'], a:3,
+        ex:'¡Así es! La orina sale del cuerpo a través de la uretra.' }
+    ]
+  },
+  {
+    id:'ig', e:'🌀', n:'Intestino Grueso', c:'#eeedfe', b:'#7f77dd', t:'#26215c',
+    info:'Parte del sistema digestivo con función excretora. Elimina los desechos sólidos (heces) que el cuerpo no necesita.',
+    dato:'El intestino grueso absorbe agua de los desechos antes de expulsarlos.',
+    qs:[
+      { q:'¿Qué elimina el intestino grueso?',
+        o:['La orina','Los desechos sólidos (heces)','El dióxido de carbono','El sudor'], a:1,
+        ex:'¡Muy bien! El intestino grueso elimina los desechos sólidos llamados heces.' },
+      { q:'¿A cuál sistema pertenece principalmente el intestino grueso?',
+        o:['Sistema respiratorio','Sistema nervioso','Sistema digestivo','Sistema circulatorio'], a:2,
+        ex:'¡Correcto! Es parte del sistema digestivo, pero también cumple función excretora.' }
+    ]
+  }
+];
+
+var FRASES = ['¡Muy bien! +10 pts', '¡Buen trabajo en equipo! +10 pts', '¡Sigue así! +10 pts', '¡Excelente respuesta! +10 pts'];
+var puntos = 0, completados = [], orgActual = null, qActual = 0, timerID = null;
+
+function mostrar(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('on'); });
+  document.getElementById(id).classList.add('on');
+}
+
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(function(){ t.style.opacity = '0'; }, 2200);
+}
+
+function syncPuntos() {
+  document.getElementById('pts1').textContent = puntos + ' pts';
+  document.getElementById('pts2').textContent = puntos + ' pts';
+}
+
+function iniciarJuego() {
+  puntos = 0; completados = []; orgActual = null; qActual = 0;
+  syncPuntos(); dibujarRuta(); dibujarTarjetas();
+  document.getElementById('detalle').style.display = 'none';
+  document.getElementById('titulo-tablero').textContent = 'Elige un órgano';
+  mostrar('s1');
+}
+
+function dibujarRuta() {
+  var el = document.getElementById('ruta'); el.innerHTML = '';
+  ORGANOS.forEach(function(o, i) {
+    var hecho = completados.indexOf(o.id) >= 0;
+    var actual = orgActual && orgActual.id === o.id;
+    var div = document.createElement('div');
+    div.className = 'paso' + (hecho ? ' hecho' : '') + (actual ? ' actual' : '');
+    div.style.borderColor = (hecho || actual) ? o.b : '#ccc';
+    div.style.background = hecho ? o.c : actual ? o.c : 'white';
+    div.textContent = o.e;
+    el.appendChild(div);
+    if (i < ORGANOS.length - 1) {
+      var a = document.createElement('span'); a.className = 'flecha'; a.textContent = '→'; el.appendChild(a);
+    }
+  });
+}
+
+function dibujarTarjetas() {
+  var el = document.getElementById('tarjetas'); el.innerHTML = '';
+  ORGANOS.forEach(function(o) {
+    var hecho = completados.indexOf(o.id) >= 0;
+    var div = document.createElement('div');
+    div.className = 'tarjeta' + (hecho ? ' hecha' : '');
+    div.style.borderColor = hecho ? o.b : '#ddd';
+    div.style.background = hecho ? o.c : 'white';
+    div.innerHTML =
+      '<div class="icono">' + o.e + '</div>' +
+      '<div class="nombre" style="color:' + (hecho ? o.t : '#333') + ';">' + o.n + '</div>' +
+      '<div class="sub" style="color:' + (hecho ? o.t : '#888') + ';">' + (hecho ? '✓ Completado' : 'Toca aquí') + '</div>';
+    if (!hecho) {
+      div.onclick = (function(org){ return function(){ verDetalle(org); }; })(o);
+    }
+    el.appendChild(div);
+  });
+}
+
+function verDetalle(o) {
+  orgActual = o;
+  dibujarRuta();
+  document.getElementById('titulo-tablero').textContent = o.n;
+  var el = document.getElementById('detalle');
+  el.style.display = 'block';
+  el.style.background = o.c;
+  el.style.border = '2px solid ' + o.b;
+  el.innerHTML =
+    '<div class="encabezado">' +
+      '<span class="icono-grande">' + o.e + '</span>' +
+      '<div><div class="titulo-org" style="color:' + o.t + ';">' + o.n + '</div>' +
+      '<div style="font-size:12px;color:' + o.t + ';">Órgano del sistema excretor</div></div>' +
+    '</div>' +
+    '<div class="desc" style="color:' + o.t + ';">' + o.info + '</div>' +
+    '<div class="dato-box"><span style="color:' + o.t + ';">⭐ <b>Dato curioso:</b> ' + o.dato + '</span></div>' +
+    '<button class="btn-verde" style="background:' + o.b + ';" onclick="empezarPreguntas()">❓ ¡Responder preguntas!</button>';
+}
+
+function empezarPreguntas() {
+  qActual = 0; mostrar('s2'); mostrarPregunta();
+}
+
+function mostrarPregunta() {
+  var q = orgActual.qs[qActual];
+  document.getElementById('qlabel').textContent = 'Pregunta ' + (qActual + 1) + ' de ' + orgActual.qs.length + ' — ' + orgActual.n;
+  document.getElementById('qorg').textContent = orgActual.e + ' ' + orgActual.n;
+  document.getElementById('qtxt').textContent = q.q;
+  document.getElementById('feed').style.display = 'none';
+  document.getElementById('btnSig').style.display = 'none';
+  var el = document.getElementById('opciones'); el.innerHTML = '';
+  q.o.forEach(function(txt, i) {
+    var b = document.createElement('button');
+    b.className = 'opcion'; b.textContent = txt;
+    b.onclick = (function(idx, btn){ return function(){ responder(idx, btn); }; })(i, b);
+    el.appendChild(b);
+  });
+  arrancarTimer();
+}
+
+function arrancarTimer() {
+  clearInterval(timerID);
+  var seg = 20;
+  var bar = document.getElementById('tbar');
+  bar.style.width = '100%'; bar.style.background = '#0a7c55';
+  timerID = setInterval(function() {
+    seg--;
+    var p = (seg / 20) * 100;
+    bar.style.width = p + '%';
+    bar.style.background = p > 50 ? '#0a7c55' : p > 25 ? '#ef9f27' : '#e24b4a';
+    if (seg <= 0) { clearInterval(timerID); tiempoFuera(); }
+  }, 1000);
+}
+
+function tiempoFuera() {
+  var q = orgActual.qs[qActual];
+  var btns = document.getElementById('opciones').querySelectorAll('.opcion');
+  btns.forEach(function(b){ b.disabled = true; });
+  btns[q.a].classList.add('correcta');
+  mostrarFeed(false, '⏱ ¡Se acabó el tiempo! Respuesta correcta: "' + q.o[q.a] + '". ' + q.ex);
+  document.getElementById('btnSig').style.display = 'block';
+}
+
+function responder(idx, btn) {
+  clearInterval(timerID);
+  var q = orgActual.qs[qActual];
+  var btns = document.getElementById('opciones').querySelectorAll('.opcion');
+  btns.forEach(function(b){ b.disabled = true; });
+  if (idx === q.a) {
+    btn.classList.add('correcta');
+    puntos += 10; syncPuntos();
+    toast(FRASES[Math.floor(Math.random() * FRASES.length)]);
+    mostrarFeed(true, '✅ ' + q.ex);
+  } else {
+    btn.classList.add('mal');
+    btns[q.a].classList.add('correcta');
+    mostrarFeed(false, '❌ La respuesta correcta es: "' + q.o[q.a] + '". ' + q.ex);
+  }
+  document.getElementById('btnSig').style.display = 'block';
+}
+
+function mostrarFeed(ok, msg) {
+  var el = document.getElementById('feed');
+  el.className = 'feed ' + (ok ? 'ok' : 'mal');
+  el.style.display = 'block';
+  el.textContent = msg;
+}
+
+function siguientePaso() {
+  if (qActual < orgActual.qs.length - 1) {
+    qActual++; mostrarPregunta();
+  } else {
+    completados.push(orgActual.id);
+    toast('¡' + orgActual.n + ' completado!');
+    if (completados.length === ORGANOS.length) {
+      setTimeout(pantallaFinal, 800);
+    } else {
+      mostrar('s1');
+      dibujarRuta(); dibujarTarjetas();
+      document.getElementById('detalle').style.display = 'none';
+      document.getElementById('titulo-tablero').textContent = 'Elige otro órgano';
+      orgActual = null;
+    }
+  }
+}
+
+function pantallaFinal() {
+  mostrar('s3');
+  var max = ORGANOS.reduce(function(s, o){ return s + o.qs.length * 10; }, 0);
+  var p = puntos / max;
+  var medal = '🥉', msg = '¡Buen comienzo! Sigan practicando juntos.', est = 2;
+  if (p >= 0.9) { medal = '🏆'; msg = '¡Increíble trabajo en equipo! Dominaron el sistema excretor.'; est = 5; }
+  else if (p >= 0.7) { medal = '🥇'; msg = '¡Excelente trabajo colaborativo! Aprendieron muchísimo.'; est = 4; }
+  else if (p >= 0.5) { medal = '🥈'; msg = '¡Muy bien! El equipo trabajó excelente.'; est = 3; }
+  document.getElementById('medal').textContent = medal;
+  document.getElementById('fmsg').textContent = msg;
+  var s = '';
+  for (var i = 0; i < 5; i++) s += (i < est ? '⭐' : '☆');
+  document.getElementById('estrellas').textContent = s;
+  document.getElementById('fnumero').textContent = puntos + ' / ' + max + ' pts';
+  document.getElementById('fsubt').textContent = (puntos / 10) + ' de ' + (max / 10) + ' respuestas correctas';
+}
+
+function reiniciar() { iniciarJuego(); }
+</script>
+</body>
+</html>
